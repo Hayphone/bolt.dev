@@ -2,7 +2,8 @@ import { useStore } from '@nanostores/react';
 import type { Message } from 'ai';
 import { useChat } from 'ai/react';
 import { useAnimate } from 'framer-motion';
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState, useCallback } from 'react';
+import { apiConfigStore } from '~/lib/stores/settings';
 import { cssTransition, toast, ToastContainer } from 'react-toastify';
 import { useMessageParser, usePromptEnhancer, useShortcuts, useSnapScroll } from '~/lib/hooks';
 import { useChatHistory } from '~/lib/persistence';
@@ -70,16 +71,83 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory }: ChatProp
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [chatStarted, setChatStarted] = useState(initialMessages.length > 0);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
 
   const { showChat } = useStore(chatStore);
 
   const [animationScope, animate] = useAnimate();
 
+  // Récupération de la configuration API
+  const apiConfig = useStore(apiConfigStore);
+  
+  // Création d'un objet plat pour la transmission (compatible avec JSONValue)
+  const apiConfigData = {
+    provider: apiConfig.provider,
+    apiKey: apiConfig.apiKey,
+    endpoint: apiConfig.endpoint || "", // Garantir que la valeur n'est jamais undefined
+  };
+
   const { messages, isLoading, input, handleInputChange, setInput, stop, append } = useChat({
     api: '/api/chat',
+    body: {
+      apiConfig: apiConfigData, // Transmet la configuration API au serveur avec le nom attendu
+    },
     onError: (error) => {
       logger.error('Request failed\n\n', error);
-      toast.error('There was an error processing your request');
+      
+      // Fonction pour extraire un message d'erreur plus convivial
+      const getErrorMessage = () => {
+        // Cas de base: erreur standard JavaScript
+        if (error instanceof Error) {
+          return error.message;
+        }
+        
+        // Cas pour les réponses HTTP et autres objets
+        try {
+          // Convertir à string pour analyser le contenu
+          const errorStr = String(error);
+          
+          // Vérifier différentes conditions d'erreur
+          if (errorStr.includes("API key")) {
+            return "Erreur de clé API: Veuillez vérifier que votre clé API est valide dans les paramètres.";
+          } else if (errorStr.includes("timeout") || errorStr.includes("network") || errorStr.includes("fetch")) {
+            return "Erreur de connexion: Problème réseau lors de la communication avec le serveur API.";
+          } else if (errorStr.includes("rate limit") || errorStr.includes("429")) {
+            return "Limite de requêtes atteinte: Veuillez réessayer dans quelques minutes.";
+          }
+          
+          // Essayer d'extraire un message JSON
+          if (typeof error === 'object' && error !== null) {
+            // Essayer d'accéder à error.error ou error.message
+            const errorObj = error as Record<string, any>;
+            if (errorObj.error) return String(errorObj.error);
+            if (errorObj.message) return String(errorObj.message);
+            
+            // Chercher un texte de statut si c'est une réponse HTTP
+            if (errorObj.statusText) return String(errorObj.statusText);
+          }
+          
+          // Fallback: retourner la chaîne d'erreur complète
+          return errorStr;
+        } catch (e) {
+          // En cas d'erreur lors de l'analyse, retourner un message générique
+          return "Une erreur s'est produite lors de la communication avec l'API.";
+        }
+      };
+      
+      // Obtenir le message d'erreur formaté
+      const errorMessage = getErrorMessage();
+      
+      // Afficher le toast avec le message approprié
+      toast.error(errorMessage);
+      
+      // Si c'est un problème de clé API, suggérer de vérifier les paramètres
+      if (errorMessage.includes("clé API") || errorMessage.includes("API key")) {
+        toast.info("Vérifiez votre configuration API dans les paramètres", {
+          autoClose: 8000,
+          hideProgressBar: false
+        });
+      }
     },
     onFinish: () => {
       logger.debug('Finished streaming');
@@ -146,10 +214,49 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory }: ChatProp
     setChatStarted(true);
   };
 
+  // Fonction pour gérer les fichiers sélectionnés
+  const handleFilesSelected = useCallback((files: File[]) => {
+    if (files.length > 0) {
+      setAttachedFiles(prevFiles => [...prevFiles, ...files]);
+      toast.info(`${files.length} fichier(s) attaché(s)`);
+    }
+  }, []);
+
+  // Fonction pour supprimer un fichier attaché
+  const handleRemoveFile = useCallback((fileIndex: number) => {
+    setAttachedFiles(prevFiles => {
+      const newFiles = [...prevFiles];
+      newFiles.splice(fileIndex, 1);
+      return newFiles;
+    });
+    toast.info('Fichier supprimé');
+  }, []);
+
+  // Fonction pour préparer les fichiers à envoyer
+  const prepareFilesForUpload = async (): Promise<{ name: string, type: string, base64: string }[]> => {
+    return Promise.all(
+      attachedFiles.map(async (file) => {
+        return new Promise<{ name: string, type: string, base64: string }>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            // Convertir le fichier en base64
+            const base64String = reader.result as string;
+            resolve({
+              name: file.name,
+              type: file.type,
+              base64: base64String
+            });
+          };
+          reader.readAsDataURL(file);
+        });
+      })
+    );
+  };
+
   const sendMessage = async (_event: React.UIEvent, messageInput?: string) => {
     const _input = messageInput || input;
 
-    if (_input.length === 0 || isLoading) {
+    if ((_input.length === 0 && attachedFiles.length === 0) || isLoading) {
       return;
     }
 
@@ -168,26 +275,53 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory }: ChatProp
 
     runAnimation();
 
+    // Préparer les fichiers pour l'envoi
+    let fileAttachments: { name: string, type: string, base64: string }[] = [];
+    if (attachedFiles.length > 0) {
+      fileAttachments = await prepareFilesForUpload();
+    }
+
     if (fileModifications !== undefined) {
       const diff = fileModificationsToHTML(fileModifications);
 
-      /**
-       * If we have file modifications we append a new user message manually since we have to prefix
-       * the user input with the file modifications and we don't want the new user input to appear
-       * in the prompt. Using `append` is almost the same as `handleSubmit` except that we have to
-       * manually reset the input and we'd have to manually pass in file attachments. However, those
-       * aren't relevant here.
-       */
-      append({ role: 'user', content: `${diff}\n\n${_input}` });
+      // Construction du contenu avec les fichiers attachés
+      let content = `${diff}\n\n${_input}`;
+      if (fileAttachments.length > 0) {
+        content += `\n\nFichiers attachés: ${attachedFiles.map(f => f.name).join(', ')}`;
+      }
 
-      /**
-       * After sending a new message we reset all modifications since the model
-       * should now be aware of all the changes.
-       */
+      append({
+        role: 'user', 
+        content: content,
+      }, {
+        data: JSON.parse(JSON.stringify({ 
+          apiConfig: apiConfigData,
+          attachments: fileAttachments.length > 0 ? fileAttachments : undefined
+        }))
+      });
+
       workbenchStore.resetAllFileModifications();
     } else {
-      append({ role: 'user', content: _input });
+      // Construction du contenu avec les fichiers attachés
+      let content = _input;
+      if (fileAttachments.length > 0) {
+        const fileNames = attachedFiles.map(f => f.name).join(', ');
+        content = content ? `${content}\n\nFichiers attachés: ${fileNames}` : `Fichiers attachés: ${fileNames}`;
+      }
+
+      append(
+        { role: 'user', content: content },
+        { 
+          data: JSON.parse(JSON.stringify({ 
+            apiConfig: apiConfigData,
+            attachments: fileAttachments.length > 0 ? fileAttachments : undefined
+          }))
+        }
+      );
     }
+
+    // Réinitialiser les fichiers attachés après l'envoi
+    setAttachedFiles([]);
 
     setInput('');
 
@@ -227,8 +361,11 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory }: ChatProp
         enhancePrompt(input, (input) => {
           setInput(input);
           scrollTextArea();
-        });
+        }, apiConfigData);
       }}
+      onFilesSelected={handleFilesSelected}
+      onRemoveFile={handleRemoveFile}
+      attachedFiles={attachedFiles}
     />
   );
 });

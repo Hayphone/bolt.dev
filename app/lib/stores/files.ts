@@ -113,6 +113,99 @@ export class FilesStore {
     }
   }
 
+  /**
+   * Supprime un fichier du WebContainer et met à jour le store.
+   * @param filePath Le chemin absolu du fichier à supprimer.
+   * @returns Promise qui se résout quand le fichier est supprimé.
+   */
+  async deleteFile(filePath: string) {
+    const webcontainer = await this.#webcontainer;
+
+    try {
+      const relativePath = nodePath.relative(webcontainer.workdir, filePath);
+
+      if (!relativePath) {
+        throw new Error(`EINVAL: invalid file path, delete '${relativePath}'`);
+      }
+
+      // Vérifier que le fichier existe
+      const file = this.getFile(filePath);
+      if (!file) {
+        throw new Error(`File not found: ${filePath}`);
+      }
+
+      // Supprimer le fichier du système de fichiers
+      await webcontainer.fs.rm(relativePath);
+
+      // Mettre à jour le store immédiatement pour une réactivité instantanée
+      // Normalement, le watcher détectera le changement, mais pour plus de réactivité,
+      // nous mettons à jour immédiatement
+      this.files.setKey(filePath, undefined);
+      this.#size--;
+
+      // Nettoyer les fichiers modifiés
+      this.#modifiedFiles.delete(filePath);
+
+      logger.info(`File deleted: ${filePath}`);
+    } catch (error) {
+      logger.error(`Failed to delete file: ${filePath}\n\n`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Imports a file into the WebContainer and updates the store.
+   * @param filePath The absolute path where the file should be created.
+   * @param content The file content as a Uint8Array.
+   */
+  async importFile(filePath: string, content: Uint8Array) {
+    const webcontainer = await this.#webcontainer;
+    const relativePath = nodePath.relative(webcontainer.workdir, filePath);
+
+    if (!relativePath || relativePath.startsWith('..')) {
+      logger.error(`Invalid import path: ${filePath}`);
+      throw new Error(`Invalid import path: ${filePath}`);
+    }
+
+    try {
+      // Ensure parent directory exists
+      const dirname = nodePath.dirname(relativePath);
+      if (dirname !== '.') {
+        // The recursive option handles cases where multiple levels need creation.
+        await webcontainer.fs.mkdir(dirname, { recursive: true });
+        // Update store for potentially created directories (watcher might be slow)
+        let currentPath = '';
+        for (const part of dirname.split(nodePath.sep)) {
+          currentPath = nodePath.join(currentPath, part);
+          const fullPath = nodePath.join(webcontainer.workdir, currentPath);
+          if (!this.files.get()[fullPath]) {
+             this.files.setKey(fullPath, { type: 'folder' });
+             logger.info(`Implicitly created folder in store: ${fullPath}`);
+          }
+        }
+      }
+
+      // Write the file content
+      await webcontainer.fs.writeFile(relativePath, content);
+
+      // Determine if binary and decode if necessary
+      const isBinary = isBinaryFile(content);
+      const decodedContent = isBinary ? '' : this.#decodeFileContent(content);
+
+      // Update the store immediately
+      // Check if file already existed (replace scenario)
+      if (!this.files.get()[filePath]) {
+        this.#size++; // Increment size only for new files
+      }
+      this.files.setKey(filePath, { type: 'file', content: decodedContent, isBinary });
+
+      logger.info(`File imported successfully: ${filePath}`);
+    } catch (error) {
+      logger.error(`Failed to import file ${filePath}\n\n`, error);
+      throw error; // Re-throw the error to be handled by the caller
+    }
+  }
+
   async #init() {
     const webcontainer = await this.#webcontainer;
 
@@ -212,9 +305,7 @@ function isBinaryFile(buffer: Uint8Array | undefined) {
  * array buffer.
  */
 function convertToBuffer(view: Uint8Array): Buffer {
-  const buffer = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
-
-  Object.setPrototypeOf(buffer, Buffer.prototype);
-
-  return buffer as Buffer;
+  // Create a proper Buffer instance from the Uint8Array's underlying ArrayBuffer.
+  // This is safer than manipulating prototypes.
+  return Buffer.from(view.buffer, view.byteOffset, view.byteLength);
 }

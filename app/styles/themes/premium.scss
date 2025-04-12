@@ -1,0 +1,293 @@
+/* Thème Premium Luxe - Variables et styles */
+
+/* Variables du thème premium */
+:root[data-theme='premium'] {
+  /* Palette de couleurs luxueuses */
+  --gold-light: #FFD700;    /* Or clair pour les accents principaux */
+  --gold-medium: #FFA500;   /* Or moyen pour les bordures standard */
+  --gold-dark: #B8860B;     /* Or foncé pour les ombres */
+  --gold-pale: #F5E1A6;     /* Or pâle pour effets subtils */
+  --gold-gradient: linear-gradient(135deg, #FFC800, #FF8C00);
+  
+  --glass-black-pure: rgba(0, 0, 0, 0.85);    /* Noir pur avec transparence */
+  --glass-black-rich: rgba(10, 10, 10, 0.8);  /* Noir riche avec transparence */
+  --glass-black-smoke: rgba(26, 26, 26, 0.75); /* Noir fumé avec transparence */
+  
+  --text-primary: #FFFFFF;   /* Texte blanc principal */
+  --text-secondary: #E0E0E0; /* Texte secondaire légèrement tamisé */
+  --text-gold: #FFD700;      /* Texte doré pour accents */
+
+  /* Réutilisation des variables existantes de Bolt pour le thème premium */
+  --bolt-elements-borderColor: rgba(255, 165, 0, 0.3);
+  --bolt-elements-borderColorActive: rgba(255, 215, 0, 0.6);
+
+  --bolt-elements-bg-depth-1: var(--glass-black-pure);
+  --bolt-elements-bg-depth-2: var(--glass-black-rich);
+  --bolt-elements-bg-depth-3: var(--glass-black-smoke);
+  --bolt-elements-bg-depth-4: rgba(255, 165, 0, 0.05);
+
+  --bolt-elements-textPrimary: var(--text-primary);
+  --bolt-elements-textSecondary: var(--text-secondary);
+  --bolt-elements-textTertiary: var(--gold-medium);
+
+  --bolt-elements-code-background: rgba(10, 10, 10, 0.95);
+  --bolt-elements-code-text: var(--text-primary);
+
+  --bolt-elements-button-primary-background: rgba(255, 165, 0, 0.15);
+  --bolt-elements-button-primary-backgroundHover: rgba(255, 165, 0, 0.25);
+  --bolt-elements-button-primary-text: var(--gold-light);
+
+  --bolt-elements-button-secondary-background: rgba(15, 15, 15, 0.9);
+  --bolt-elements-button-secondary-backgroundHover: rgba(25, 25, 25, 0.9);
+  --bolt-elements-button-secondary-text: var(--text-primary);
+
+  --bolt-elements-item-contentDefault: rgba(255, 255, 255, 0.7);
+  --bolt-elements-item-contentActive: var(--text-primary);
+  --bolt-elements-item-contentAccent: var(--gold-light);
+  --bolt-elements-item-backgroundDefault: transparent;
+  --bolt-elements-item-backgroundActive: rgba(255, 165, 0, 0.1);
+  --bolt-elements-item-backgroundAccent: rgba(255, 215, 0, 0.15);
+
+  --bolt-elements-loader-background: rgba(10, 10, 10, 0.5);
+  --bolt-elements-loader-progress: var(--gold-medium);
+
+  --bolt-elements-artifacts-background: var(--black-rich);
+  --bolt-elements-artifacts-backgroundHover: rgba(30, 30, 30, 0.95);
+
+  --bolt-elements-dividerColor: var(--gold-dark);
+
+  /* Terminal Colors - Adaptés pour thème premium */
+  --bolt-terminal-background: var(--black-rich);
+  --bolt-terminal-foreground: #dcdcdc;
+  --bolt-terminal-selection-background: rgba(255, 215, 0, 0.2);
+}
+
+/* ======== Styles spécifiques au thème premium ======== */
+
+/* Effet glassmorphisme pour l'interface */
+html[data-theme='premium'] .context-menu,
+html[data-theme='premium'] input,
+html[data-theme='premium'] textarea,
+html[data-theme='premium'] button,
+html[data-theme='premium'] select,
+html[data-theme='premium'] .card, 
+html[data-theme='premium'] .container, 
+html[data-theme='premium'] .modal, 
+html[data-theme='premium'] .dialog {
+  border: 1px solid rgba(255, 215, 0, 0.25); 
+  border-radius: 8px;
+  background-color: rgba(15, 15, 15, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.2),
+    0 0 15px rgba(255, 165, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Effet au survol style Apple */
+html[data-theme='premium'] .context-menu:hover,
+html[data-theme='premium'] button:hover,
+html[data-theme='premium'] .card:hover,
+html[data-theme='premium'] .container:hover {
+  box-shadow: 
+    0 5px 20px rgba(0, 0, 0, 0.25),
+    0 0 15px rgba(255, 215, 0, 0.3);
+  border-color: rgba(255, 215, 0, 0.5);
+  background-color: rgba(20, 20, 20, 0.75);
+}
+
+/* Titres avec effet glassmorphisme */
+html[data-theme='premium'] h1, 
+html[data-theme='premium'] h2, 
+html[data-theme='premium'] h3, 
+html[data-theme='premium'] h4 {
+  color: var(--gold-light);
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+/* Fioritures dorées pour l'UI façon glassmorphisme */
+html[data-theme='premium'] .file-tree-item.active {
+  border-left: 2px solid var(--gold-light);
+  background-color: rgba(255, 165, 0, 0.15);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+/* Scrollbar customisée style Apple */
+html[data-theme='premium'] ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+html[data-theme='premium'] ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  backdrop-filter: blur(5px);
+}
+
+html[data-theme='premium'] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--gold-dark), var(--gold-medium));
+  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+html[data-theme='premium'] ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--gold-medium), var(--gold-light));
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+/* Barres de séparation élégantes */
+html[data-theme='premium'] hr {
+  height: 1px;
+  background: linear-gradient(
+    90deg, 
+    transparent 0%, 
+    rgba(184, 134, 11, 0.3) 15%, 
+    rgba(255, 215, 0, 0.5) 50%,
+    rgba(184, 134, 11, 0.3) 85%, 
+    transparent 100%
+  );
+  border: none;
+  margin: 15px 0;
+}
+
+/* Cartes premium avec effet glassmorphisme avancé style Apple */
+html[data-theme='premium'] .premium-card {
+  background: linear-gradient(145deg, rgba(18, 18, 18, 0.7), rgba(10, 10, 10, 0.7));
+  border: 1px solid rgba(255, 165, 0, 0.15);
+  border-radius: 12px;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.3),
+    0 0 15px rgba(255, 215, 0, 0.1),
+    inset 0 0 5px rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+html[data-theme='premium'] .premium-card:hover {
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.35),
+    0 0 20px rgba(255, 215, 0, 0.2),
+    inset 0 0 10px rgba(255, 255, 255, 0.05);
+  background: linear-gradient(145deg, rgba(22, 22, 22, 0.75), rgba(15, 15, 15, 0.75));
+  border-color: rgba(255, 215, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Animation d'entrée pour les dialogues */
+@keyframes fadeInGold {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+    box-shadow: 0 0 0 rgba(255, 215, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+  }
+}
+
+html[data-theme='premium'] .dialog, 
+html[data-theme='premium'] .modal {
+  animation: fadeInGold 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Effet d'ondulation au clic */
+html[data-theme='premium'] .premium-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+html[data-theme='premium'] .premium-ripple::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 215, 0, 0.4);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%, -50%);
+  transform-origin: 50% 50%;
+}
+
+html[data-theme='premium'] .premium-ripple:active::after {
+  animation: ripple 0.6s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0, 0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(30, 30);
+    opacity: 0;
+  }
+}
+
+/* Effet glossy pour les boutons */
+html[data-theme='premium'] .premium-button-glossy {
+  background: linear-gradient(135deg, rgba(25, 25, 25, 0.9), rgba(15, 15, 15, 0.9));
+  position: relative;
+  overflow: hidden;
+}
+
+html[data-theme='premium'] .premium-button-glossy::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 215, 0, 0.1),
+    rgba(255, 215, 0, 0.2),
+    rgba(255, 215, 0, 0.1),
+    transparent
+  );
+  transition: left 0.6s;
+  z-index: -1;
+}
+
+html[data-theme='premium'] .premium-button-glossy:hover::before {
+  left: 100%;
+}
+
+/* Effet de soulignement élégant pour les liens */
+html[data-theme='premium'] .premium-link {
+  position: relative;
+  text-decoration: none;
+  color: var(--gold-medium);
+}
+
+html[data-theme='premium'] .premium-link::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  bottom: -2px;
+  left: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--gold-medium),
+    transparent
+  );
+  transform: scaleX(0);
+  transform-origin: bottom right;
+  transition: transform 0.3s ease-out;
+}
+
+html[data-theme='premium'] .premium-link:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}

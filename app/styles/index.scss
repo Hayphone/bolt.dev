@@ -1,6 +1,8 @@
+/* Revenons à @import pour les fichiers qui définissent des variables partagées */
 @import './variables.scss';
 @import './z-index.scss';
 @import './animations.scss';
+@import './themes/premium.scss'; /* Import du thème premium */
 @import './components/terminal.scss';
 @import './components/resize-handle.scss';
 @import './components/code.scss';

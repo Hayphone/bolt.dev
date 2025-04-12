@@ -1,8 +1,10 @@
 import { useStore } from '@nanostores/react';
 import { motion, type HTMLMotionProps, type Variants } from 'framer-motion';
 import { computed } from 'nanostores';
-import { memo, useCallback, useEffect } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import { GitPanel } from '~/components/github/GitPanel';
+import { GitHubImporter } from '~/components/github/GitHubImporter.client';
 import {
   type OnChangeCallback as OnEditorChange,
   type OnScrollCallback as OnEditorScroll,
@@ -28,6 +30,10 @@ const sliderOptions: SliderOptions<WorkbenchViewType> = {
   left: {
     value: 'code',
     text: 'Code',
+  },
+  middle: {
+    value: 'git',
+    text: 'Git',
   },
   right: {
     value: 'preview',
@@ -62,6 +68,8 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
   const unsavedFiles = useStore(workbenchStore.unsavedFiles);
   const files = useStore(workbenchStore.files);
   const selectedView = useStore(workbenchStore.currentView);
+  
+  const [isGitHubImporterOpen, setIsGitHubImporterOpen] = useState(false);
 
   const setSelectedView = (view: WorkbenchViewType) => {
     workbenchStore.currentView.set(view);
@@ -132,6 +140,15 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
                     Toggle Terminal
                   </PanelHeaderButton>
                 )}
+                {selectedView === 'git' && (
+                  <PanelHeaderButton
+                    className="mr-1 text-sm"
+                    onClick={() => setIsGitHubImporterOpen(true)}
+                  >
+                    <div className="i-ph:github-logo" />
+                    Importer depuis GitHub
+                  </PanelHeaderButton>
+                )}
                 <IconButton
                   icon="i-ph:x-circle"
                   className="-mr-1"
@@ -160,11 +177,23 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
                   />
                 </View>
                 <View
+                  initial={{ x: selectedView === 'git' ? 0 : selectedView === 'code' ? '100%' : '-100%' }}
+                  animate={{ x: selectedView === 'git' ? 0 : selectedView === 'code' ? '100%' : '-100%' }}
+                >
+                  <GitPanel />
+                </View>
+                <View
                   initial={{ x: selectedView === 'preview' ? 0 : '100%' }}
                   animate={{ x: selectedView === 'preview' ? 0 : '100%' }}
                 >
                   <Preview />
                 </View>
+                
+                {/* Dialogue d'importation GitHub */}
+                <GitHubImporter
+                  open={isGitHubImporterOpen}
+                  onClose={() => setIsGitHubImporterOpen(false)}
+                />
               </div>
             </div>
           </div>

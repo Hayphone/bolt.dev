@@ -1,11 +1,15 @@
 import { atom } from 'nanostores';
 
-export type Theme = 'dark' | 'light';
+export type Theme = 'dark' | 'light' | 'premium';
 
 export const kTheme = 'bolt_theme';
 
 export function themeIsDark() {
   return themeStore.get() === 'dark';
+}
+
+export function themeIsPremium() {
+  return themeStore.get() === 'premium';
 }
 
 export const DEFAULT_THEME = 'light';
@@ -25,11 +29,26 @@ function initStore() {
 
 export function toggleTheme() {
   const currentTheme = themeStore.get();
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  let newTheme: Theme;
+  
+  // Rotation entre les trois thèmes
+  switch (currentTheme) {
+    case 'light':
+      newTheme = 'dark';
+      break;
+    case 'dark':
+      newTheme = 'premium';
+      break;
+    default:
+      newTheme = 'light';
+  }
 
-  themeStore.set(newTheme);
+  setTheme(newTheme);
+}
 
-  localStorage.setItem(kTheme, newTheme);
-
-  document.querySelector('html')?.setAttribute('data-theme', newTheme);
+// Fonction pour changer directement vers un thème spécifique
+export function setTheme(theme: Theme) {
+  themeStore.set(theme);
+  localStorage.setItem(kTheme, theme);
+  document.querySelector('html')?.setAttribute('data-theme', theme);
 }

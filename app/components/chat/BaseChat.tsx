@@ -1,12 +1,15 @@
 import type { Message } from 'ai';
-import React, { type RefCallback } from 'react';
+import React, { type RefCallback, useState } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { Menu } from '~/components/sidebar/Menu.client';
 import { IconButton } from '~/components/ui/IconButton';
 import { Workbench } from '~/components/workbench/Workbench.client';
+import { GitHubImporter } from '~/components/github/GitHubImporter.client';
 import { classNames } from '~/utils/classNames';
 import { Messages } from './Messages.client';
 import { SendButton } from './SendButton.client';
+import { ChatFileUpload } from './ChatFileUpload';
+import { AttachedFilePreview } from './AttachedFilePreview';
 
 import styles from './BaseChat.module.scss';
 
@@ -25,6 +28,9 @@ interface BaseChatProps {
   sendMessage?: (event: React.UIEvent, messageInput?: string) => void;
   handleInputChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   enhancePrompt?: () => void;
+  onFilesSelected?: (files: File[]) => void;
+  onRemoveFile?: (fileIndex: number) => void;
+  attachedFiles?: File[];
 }
 
 const EXAMPLE_PROMPTS = [
@@ -34,6 +40,9 @@ const EXAMPLE_PROMPTS = [
   { text: 'Make a space invaders game' },
   { text: 'How do I center a div?' },
 ];
+
+// Bouton spécial pour l'importation GitHub
+const GITHUB_IMPORT_BUTTON = { icon: true, text: 'Importer depuis GitHub' };
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -54,9 +63,14 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       handleInputChange,
       enhancePrompt,
       handleStop,
+      onFilesSelected,
+      onRemoveFile,
+      attachedFiles = [],
     },
     ref,
   ) => {
+    // État pour contrôler l'affichage du dialogue d'importation GitHub
+    const [showGitHubImporter, setShowGitHubImporter] = useState(false);
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
 
     return (
@@ -173,6 +187,15 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                           </>
                         )}
                       </IconButton>
+                      <ChatFileUpload 
+                        disabled={isStreaming} 
+                        onFileSelect={onFilesSelected}
+                      />
+                      {attachedFiles.length > 0 && (
+                        <div className="text-xs text-bolt-elements-item-contentAccent font-medium ml-1">
+                          {attachedFiles.length} fichier(s) attaché(s)
+                        </div>
+                      )}
                     </div>
                     {input.length > 3 ? (
                       <div className="text-xs text-bolt-elements-textTertiary">
@@ -181,12 +204,33 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     ) : null}
                   </div>
                 </div>
-                <div className="bg-bolt-elements-background-depth-1 pb-6">{/* Ghost Element */}</div>
+                <div className="bg-bolt-elements-background-depth-1 pb-6">
+                  {/* Prévisualisation des fichiers attachés */}
+                  {attachedFiles.length > 0 && (
+                    <div className="px-4 py-2">
+                      <AttachedFilePreview 
+                        files={attachedFiles} 
+                        onRemoveFile={onRemoveFile}
+                        disabled={isStreaming}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             {!chatStarted && (
               <div id="examples" className="relative w-full max-w-xl mx-auto mt-8 flex justify-center">
                 <div className="flex flex-col space-y-2 [mask-image:linear-gradient(to_bottom,black_0%,transparent_180%)] hover:[mask-image:none]">
+                  {/* Bouton d'importation GitHub mis en avant */}
+                  <button
+                    onClick={() => setShowGitHubImporter(true)}
+                    className="group flex items-center w-full gap-2 justify-center bg-transparent text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary transition-theme mb-4 border border-bolt-elements-borderColor rounded-md py-2 px-3 hover:bg-bolt-elements-background-depth-2"
+                  >
+                    <div className="i-ph:github-logo text-lg" />
+                    {GITHUB_IMPORT_BUTTON.text}
+                  </button>
+                  
+                  {/* Exemples standard */}
                   {EXAMPLE_PROMPTS.map((examplePrompt, index) => {
                     return (
                       <button
@@ -204,6 +248,16 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                 </div>
               </div>
             )}
+            
+            {/* Dialogue d'importation GitHub */}
+            <ClientOnly>
+              {() => (
+                <GitHubImporter
+                  open={showGitHubImporter}
+                  onClose={() => setShowGitHubImporter(false)}
+                />
+              )}
+            </ClientOnly>
           </div>
           <ClientOnly>{() => <Workbench chatStarted={chatStarted} isStreaming={isStreaming} />}</ClientOnly>
         </div>

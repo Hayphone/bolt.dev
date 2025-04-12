@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from 'react-resizable-panels';
+import { FileUpload } from './FileUpload';
 import {
   CodeMirrorEditor,
   type EditorDocument,
@@ -121,6 +122,25 @@ export const EditorPanel = memo(
         setActiveTerminal(terminalCount);
       }
     };
+    
+    const removeTerminal = (index: number) => {
+      // Ne pas supprimer le dernier terminal
+      if (terminalCount <= 1) return;
+      
+      // Mise à jour des références de terminal
+      const newRefs = [...terminalRefs.current];
+      newRefs.splice(index, 1);
+      terminalRefs.current = newRefs;
+      
+      // Ajustement de l'index terminal actif
+      if (activeTerminal >= index) {
+        // Si le terminal à supprimer est celui actif ou avant, ajuster l'index actif
+        setActiveTerminal(Math.max(0, activeTerminal - 1));
+      }
+      
+      // Diminuer le nombre total de terminaux
+      setTerminalCount(terminalCount - 1);
+    };
 
     return (
       <PanelGroup direction="vertical">
@@ -132,6 +152,12 @@ export const EditorPanel = memo(
                   <div className="i-ph:tree-structure-duotone shrink-0" />
                   Files
                 </PanelHeader>
+                
+                {/* Zone d'upload avec glisser-déposer */}
+                <div className="px-2 py-2">
+                  <FileUpload className="mb-2" />
+                </div>
+                
                 <FileTree
                   className="h-full"
                   files={files}
@@ -216,7 +242,21 @@ export const EditorPanel = memo(
                       onClick={() => setActiveTerminal(index)}
                     >
                       <div className="i-ph:terminal-window-duotone text-lg" />
-                      Terminal {terminalCount > 1 && index + 1}
+                      <span className="flex items-center">
+                        Terminal {terminalCount > 1 && index + 1}
+                        {terminalCount > 1 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation(); // Empêcher le clic sur l'onglet parent
+                              removeTerminal(index);
+                            }}
+                            className="ml-2 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary"
+                            title="Fermer le terminal"
+                          >
+                            <span className="i-ph:x-circle-duotone text-sm"></span>
+                          </button>
+                        )}
+                      </span>
                     </button>
                   );
                 })}
